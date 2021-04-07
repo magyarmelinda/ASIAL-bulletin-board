@@ -1,0 +1,174 @@
+<ons-page>
+  <ons-toolbar>
+    <div class="center">Bulletin Board</div>
+    <div class="right">
+      <ons-toolbar-button>
+        <ons-icon icon="md-plus" id="open"></ons-icon>
+      </ons-toolbar-button>
+    </div>
+  </ons-toolbar>
+  <ons-list>
+    <ons-list-header>Thread List</ons-list-header>
+    <span id="threads"></span>
+  </ons-list>
+  <ons-dialog direction="up">
+    <div style="text-align: center">
+      <p>
+        <ons-input id="title" modifier="underbar" placeholder="Thread Title" float></ons-input>
+      </p>
+      <p>
+        <textarea class="textarea" id="body" cols="20" rows="3" placeholder="Description"></textarea>
+      </p>
+      <p>
+        <input type="file" id="image" accept="image/*" />
+      </p>
+      <p style="margin-top: 30px">
+        <ons-button id="add">Create Thread</ons-button>
+      </p>
+    </div>
+  </ons-dialog>
+
+  <script>
+    (() => {
+      // when screen is initalized add an event listener
+      ons.getScriptPage().onInit = function () {
+        // event is processed when the plus button is pressed
+        document.querySelector('#open').onclick = openDialog.bind(this);
+        // event is processed when the add thread button is pressed
+        document.querySelector('#add').onclick = addThread.bind(this);
+      }
+
+      // event is processed when the screen is displayed
+      ons.getScriptPage().onShow = function () {
+        // read the thread list
+        showThread.bind(this)();
+      }
+
+      // displays a dialog for adding Threads
+      function openDialog() {
+        this.querySelector('ons-dialog').show();
+      }
+
+      // wvent when the add Thread button is pressed
+      async function addThread() {
+        // variables
+        const title = this.querySelector('#title').value;
+        const body = this.querySelector('#body').value;
+        const file = this.querySelector('#image').files[0];
+        const user = ncmb.User.getCurrentUser();
+        // permission settings
+        // read permission available for everybody
+        // edit/delete authority to admin/or yourself
+        const acl = new ncmb.Acl();
+        acl
+          .setPublicReadAccess(true)
+          .setRoleWriteAccess('admin', true)
+          .setUserWriteAccess(user, true);
+        // if selected, upload image
+        if (file) {
+          await ncmb.File.upload(file.name, file, acl);
+        }
+        // create Thread class
+        const Thread = ncmb.DataStore('Thread');
+        const thread = new Thread;
+        // set values and save
+        await thread
+          .set('title', title)
+          .set('body', body)
+          .set('image', file.name)
+          .set('acl', acl)
+          .save();
+        // close dialog
+        this.querySelector('ons-dialog').hide();
+        // move to thread.html
+        document.querySelector('#nav').pushPage('thread.html', { data: { thread } });
+      }
+
+      // getThread gets data from the NCMB Thread class
+      async function getThread() {
+        const Thread = ncmb.DataStore('Thread');
+        return await Thread
+          .order('createDate', true)
+          .limit(100)
+          .fetchAll();
+      }
+
+      async function showThread() {
+        // DOM to be displayed by Thread
+        const dom = this.querySelector('#threads');
+        const html = [];
+        this.threads = await getThread();
+        this.threads.forEach(thread => {
+          // prepare list for DOM
+          html.push(`
+            <ons-list-item modifier="chevron" tappable data-object-id="${thread.objectId}">
+              <div class="left">
+                <img id="img-${thread.objectId}" data-name="${thread.get('image')}" width="30" height"30" class="square-image list-item__thumbnail" src="http://placehold.jp/30x30.png">
+              </div>
+              <div class="center">
+                <span class="list-item__title">
+                  ${thread.get('title')} ${deletable(thread)}
+                </span>
+                <span class="list-item__subtitle">
+                  ${thread.get('body')}
+                </span>
+              </div>
+            </ons-list-item>
+          `);
+        });
+        // add to DOM
+        dom.innerHTML = html.join('');
+        addEvent.bind(this)();
+      }
+
+      // Thread event settings
+      function addEvent() {
+        // event when tapping a Thread
+        this.querySelectorAll('ons-list-item').forEach(d => {
+          d.onclick = () => {
+            document.querySelector('#nav').pushPage('thread.html', {
+              data: {
+                thread: this.threads.filter(t => t.objectId === d.dataset.objectId)[0]
+              }
+            });
+          }
+        });
+        // read and display images from NCMB
+        this.querySelectorAll('ons-list-item img').forEach(d => {
+          loadImage.bind(this)(d.dataset.name, `#${d.getAttribute('id')}`);
+        });
+        // event when tapping the delete icon to delete the Thread
+        this.querySelectorAll('.delete').forEach(d => {
+          d.onclick = () => {
+            deleteThread.bind(this)(d);
+          }
+        });
+      }
+
+      // event when tapping delete icon
+      async function deleteThread(dom) {
+        // confirm
+        const res = await ons.notification.confirm('Once a thread is deleted, it cannot be restored. Are you sure you want to delete?');
+        if (res === 0) return; // in case of cancellation
+        // set the data to be deleted
+        const Thread = ncmb.DataStore('Thread');
+        const thread = new Thread;
+        thread.objectId = dom.dataset.objectId;
+        // execute deletion
+        await thread.delete();
+        // update display
+        showThread.bind(this)();
+      }
+    })();
+  </script>
+
+  <style>
+    #title, .textarea {
+      width: 80%;
+    }
+
+    .square-image {
+      object-fit: cover;
+    }
+  </style>
+</ons-page>
