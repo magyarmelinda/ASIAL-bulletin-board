@@ -9,13 +9,12 @@
     <img class="caption" src="http://placehold.jp/100x100.png" />
     <p class="thread-body"></p>
   </ons-card>
-  <ons-list id="comments">
-  </ons-list>
+  <ons-list id="comments"> </ons-list>
   <ons-fab position="bottom right" id="comment-button">
     <ons-icon icon="md-comment"></ons-icon>
   </ons-fab>
   <ons-dialog class="comment" direction="up">
-    <div style="text-align: center;">
+    <div style="text-align: center">
       <form id="comment-form">
         <p>
           <textarea class="textarea" id="body" cols="20" rows="3" placeholder="Comment"></textarea>
@@ -23,18 +22,18 @@
         <p>
           <input type="file" id="image" accept="image/*" />
         </p>
-        <p style="margin-top: 30px;">
+        <p style="margin-top: 30px">
           <ons-button id="add">Send Comment</ons-button>
         </p>
       </form>
     </div>
   </ons-dialog>
   <ons-dialog class="image" direction="up">
-    <div style="text-align: center;">
+    <div style="text-align: center">
       <ons-card>
         <img src="" class="square-image" />
       </ons-card>
-      <p style="margin-top: 30px;">
+      <p style="margin-top: 30px">
         <ons-button id="close">Close</ons-button>
       </p>
     </div>
@@ -42,9 +41,9 @@
 
   <script>
     (() => {
-      // when the Thread screen is displayed
+      // When the Thread screen is displayed
       ons.getScriptPage().onShow = function () {
-        // display Thread contents
+        // Display the Thread contents
         const { thread } = this.data;
         for (const key in thread) {
           const value = thread[key];
@@ -53,180 +52,199 @@
             dom.innerHTML = value;
           }
         }
-        // if there is an image, display it
-        if (thread.get('image')) {
-          loadImage.bind(this)(thread.get('image'), `.caption`);
+
+        // If there is an image, display it
+        if (thread.get("image")) {
+          loadImage.bind(this)(thread.get("image"), `.caption`);
         }
-        // display comments
+
+        // Display comments
         showComments.bind(this)();
-      }
+      };
 
       // At screen initialization
       ons.getScriptPage().onInit = function () {
-        // when the comment dialog display button is pressed
-        this.querySelector('#comment-button').onclick = openModal.bind(this);
-        // when comment button is pressed
-        this.querySelector('#add').onclick = addComment.bind(this);
-        // when yclose button is pressed in the image dialog
-        this.querySelector('#close').onclick = closeDialog.bind(this);
-      }
+        // When the comment dialog display button is pressed
+        this.querySelector("#comment-button").onclick = openModal.bind(this);
+        
+        // When the comment button is pressed
+        this.querySelector("#add").onclick = addComment.bind(this);
+        
+        // When the close button is pressed in the image dialog
+        this.querySelector("#close").onclick = closeDialog.bind(this);
+      };
 
-      // gets the data from NCMB's Comment class
+      // Retrieve data from NCMB's Comment class
       async function getComments(thread) {
-        const Comment = ncmb.DataStore('Comment');
-        return await Comment
-          .equalTo('thread', {
-            __type: 'Pointer',
-            className: 'Thread',
-            objectId: thread.objectId
-          })
-          .order('createDate', false)
+        const Comment = ncmb.DataStore("Comment");
+        return await Comment.equalTo("thread", {
+          __type: "Pointer",
+          className: "Thread",
+          objectId: thread.objectId,
+        })
+          .order("createDate", false)
           .limit(100)
           .fetchAll();
       }
 
       async function showComments() {
-        // load the list of comments
+        // Load the list of comments
         const thread = this.data.thread;
-        // get commets, using threads as a key
+        
+        // Get comments using threads as the key
         const ary = await getComments(thread);
-        // DOM to be displayed
-        const dom = this.querySelector('#comments');
-        // initialize HTML for display
+        
+        // DOM elements to be displayed
+        const dom = this.querySelector("#comments");
+        
+       // Initialize HTML for display
         const html = [];
-        ary.forEach(comment => {
-          // put together
+        ary.forEach((comment) => {
+          // Put together
           html.push(`
             <ons-list-item>
               <div class="left">
                 ${addImage.bind(this)(comment)}
               </div>
               <div class="center">
-                <span class="list-item__title">${comment.get('body')}</span>
+                <span class="list-item__title">${comment.get("body")}</span>
                 <span class="list-item__subtitle">
-                  ${ago(comment.get('createDate'))}
+                  ${ago(comment.get("createDate"))}
                   ${deletable(comment)}
                 </span>
               </div>
             </ons-list-item>
           `);
         });
-        // add HTML to DOM
-        dom.innerHTML = html.join('');
+
+        // Add HTML to the DOM
+        dom.innerHTML = html.join("");
         addEvent.bind(this)();
       }
 
-      // how many minutes ago was added
+      // Calculate how many minutes ago it was added
       function ago(str) {
         return timeago().format(new Date(str));
       }
 
-      // if there is an image display that, otherwise a different thumbnail
+      // If there is an image, display it; otherwise, show a different thumbnail
       function addImage(comment) {
-        if (comment.get('image')) {
-          return `<img id="img-${comment.objectId}" data-name="${comment.get('image')}" class="square-image list-item__thumbnail" src="http://placehold.jp/40x40.png" />`;
+        if (comment.get("image")) {
+          return `<img id="img-${comment.objectId}" data-name="${comment.get("image")}" class="square-image list-item__thumbnail" src="http://placehold.jp/40x40.png" />`;
         } else {
           return `<img class="list-item__thumbnail" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw%3D%3D" />`;
         }
       }
 
-      // event settings for Comments
+      // Event settings for comments
       function addEvent() {
-        // events for pictures in Comments
-        this.querySelectorAll('.square-image').forEach(d => {
-          // replace the placeholder with the actual image
-          loadImage.bind(this)(d.dataset.name, `#${d.getAttribute('id')}`);
-          // set an event to enlarge the image on click
+        // Events for pictures in comments
+        this.querySelectorAll(".square-image").forEach((d) => {
+          // Replace the placeholder with the actual image
+          loadImage.bind(this)(d.dataset.name, `#${d.getAttribute("id")}`);
+          
+          // Set an event to enlarge the image when clicked
           d.onclick = () => {
-            showImage.bind(this)(d)
-          }
+            showImage.bind(this)(d);
+          };
         });
-        // event for clicking the delete icon
-        this.querySelectorAll('.delete').forEach(d => {
+        
+        // Event triggered when the delete icon is clicked
+        this.querySelectorAll(".delete").forEach((d) => {
           d.onclick = () => {
             deleteComment.bind(this)(d);
-          }
+          };
         });
       }
 
-      // delete a comment
+      // Delete a comment
       async function deleteComment(dom) {
-        // confirm
-        const res = await ons.notification.confirm('Once a comment is deleted, it cannot be restored. Are you sure you want to delete?');
-        if (res === 0) return; // in case of cancellation
-        // set the data to be deleted
-        const Comment = ncmb.DataStore('Comment');
-        const comment = new Comment;
+        // Confirm the action
+        const res = await ons.notification.confirm("Once a comment is deleted, it cannot be restored. Are you sure you want to proceed with the deletion?");
+        if (res === 0) return; // In case of cancellation
+        
+        // Set the data that will be deleted
+        const Comment = ncmb.DataStore("Comment");
+        const comment = new Comment();
         comment.objectId = dom.dataset.objectId;
-        // execute deletion
+        
+        // Execute the deletion
         await comment.delete();
-        // update display
+        
+        // Update the display
         showComments.bind(this)();
       }
 
-      // to enlarge the image
+      // To enlarge the image
       function showImage(img) {
-        const dialog = this.querySelector('ons-dialog.image');
-        dialog.querySelector('img').src = img.src;
+        const dialog = this.querySelector("ons-dialog.image");
+        dialog.querySelector("img").src = img.src;
         dialog.show();
       }
 
-      // when the close button on image is pressed
+      // When the close button on the image is pressed
       function closeDialog() {
-        this.querySelector('ons-dialog.image').hide();
+        this.querySelector("ons-dialog.image").hide();
       }
 
-      // adding a new Comment
+      // Adding a new comment
       async function addComment() {
-        // variables
-        const body = this.querySelector('#body').value;
-        const file = this.querySelector('#image').files[0];
+        // Variables
+        const body = this.querySelector("#body").value;
+        const file = this.querySelector("#image").files[0];
         const { thread } = this.data;
         const user = ncmb.User.getCurrentUser();
-        // permission settings
-        // read permission available for everybody
-        // edit/delete authority to admin/or yourself
+
+        // Permission settings
+        // Read permission is available to everyone
+        // Edit/delete authority is granted to admins or the user themselves
         const acl = new ncmb.Acl();
         acl
           .setPublicReadAccess(true)
-          .setRoleWriteAccess('admin', true)
+          .setRoleWriteAccess("admin", true)
           .setUserWriteAccess(user, true);
-        // if file is chosen, upload it
+        
+        // If a file is chosen, upload it
         if (file) {
           await ncmb.File.upload(file.name, file, acl);
         }
         // Comment class intialization
-        const Comment = ncmb.DataStore('Comment');
-        const comment = new Comment;
-        // set values and save
+        const Comment = ncmb.DataStore("Comment");
+        const comment = new Comment();
+        
+        // Set values and save them
         await comment
-          .set('body', body)
-          .set('thread', thread)
-          .set('image', file ? file.name : null)
-          .set('acl', acl)
+          .set("body", body)
+          .set("thread", thread)
+          .set("image", file ? file.name : null)
+          .set("acl", acl)
           .save();
-        // reset form
-        this.querySelector('#comment-form').reset();
-        // hide dialog
-        this.querySelector('ons-dialog.comment').hide();
-        // update display
+        
+        // Reset the form
+        this.querySelector("#comment-form").reset();
+        
+        // Hide the dialog
+        this.querySelector("ons-dialog.comment").hide();
+        
+        // Update the display
         showComments.bind(this)();
       }
 
-      // displays a dialog for entering comments
+      // Displays a dialog for entering comments
       function openModal() {
-        this.querySelector('ons-dialog.comment').show();
+        this.querySelector("ons-dialog.comment").show();
       }
     })();
   </script>
 
-<style>
-  .caption {
-    width: 100%;
-    object-fit: cover;
-  }
-  .square-image {
-    object-fit: cover;
-  }
-</style>
+  <style>
+    .caption {
+      width: 100%;
+      object-fit: cover;
+    }
+
+    .square-image {
+      object-fit: cover;
+    }
+  </style>
 </ons-page>
